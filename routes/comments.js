@@ -3,6 +3,7 @@ const router = express.Router();
 
 //models
 const Comment = require("../models/Comment");
+const User = require("../models/User");
 
 //JWT auth middleware
 const authMiddleware = require("../userAuth");
@@ -23,7 +24,7 @@ router.delete("/:commentid", authMiddleware, (req, res)=>{
     });
 });
 
-router.post("/:commentid/like", (req, res)=>{
+router.post("/:commentid/like", authMiddleware, (req, res)=>{
     Comment.findById(req.params.commentid, (err, comment)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Liking Comment.", err});
@@ -48,7 +49,7 @@ router.post("/:commentid/like", (req, res)=>{
     });
 });
 
-router.delete("/:commentid/like", (req, res)=>{
+router.delete("/:commentid/like", authMiddleware, (req, res)=>{
     Comment.findById(req.params.commentid, (err, comment)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Un-Liking Comment.", err});
@@ -74,7 +75,7 @@ router.delete("/:commentid/like", (req, res)=>{
 });
 
 
-router.post("/:commentid/dislike", (req, res)=>{
+router.post("/:commentid/dislike", authMiddleware, (req, res)=>{
     Comment.findById(req.params.commentid, (err, comment)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Disiking Comment.", err});
@@ -99,7 +100,7 @@ router.post("/:commentid/dislike", (req, res)=>{
     });
 });
 
-router.delete("/:commentid/dislike", (req, res)=>{
+router.delete("/:commentid/dislike", authMiddleware, (req, res)=>{
     Comment.findById(req.params.commentid, (err, comment)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Un-Disiking Comment.", err});
