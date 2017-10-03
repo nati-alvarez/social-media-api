@@ -11,7 +11,15 @@ const UserSchema = new mongoose.Schema({
     bio: String,
     posts: [{type: mongoose.Schema.Types.ObjectId, ref: "Post"}],
     favorites: [{type: mongoose.Schema.Types.ObjectId, ref: "Post"}],
-    following: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}]
+    following: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}],
+    likes: {
+        posts: [mongoose.Schema.Types.ObjectId],
+        comments: [mongoose.Schema.Types.ObjectId]
+    },
+    dislikes: {
+        posts: [mongoose.Schema.Types.ObjectId],
+        comments: [mongoose.Schema.Types.ObjectId]
+    }
 });
 
 UserSchema.methods.hashPassword = function(password){

@@ -56,7 +56,19 @@ router.get('/logout', authMiddleware, (req, res)=>{
 
 router.get("/:username", authMiddleware, (req, res)=>{
     var username = req.params.username;
-    User.findOne({username}, {salt: 0, hash: 0}).populate('posts').exec((err, user)=>{
+    User.findOne({username}, {salt: 0, hash: 0})
+    .populate('posts')
+    .populate('following', 'email username image')
+    .populate('favorites')
+    .populate({
+        path: 'favorites',
+        populate: {
+            path: 'author',
+            model: 'User',
+            select: 'email username image'
+        }
+    })
+    .exec((err, user)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Fetching User."});
         }else {

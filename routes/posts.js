@@ -97,25 +97,119 @@ router.delete('/:postid', authMiddleware, (req, res)=>{
     Post.remove({_id: req.params.postid, author: req.user.id}, (err, data)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Deleting Post", err});
-        }else {
+        }else if(data.result.n < 1){
             //data.result.n = the number of posts that were deleted
-            if(data.result.n < 1){
-                res.status(403).json({succes: false, message: "You Are Not Authorized to Delete This Post."});
-            }else {
-                //delete post's comments
-                Comment.remove({post: req.params.postid}, (err)=>{
-                    res.json({success: true, message: "Post Deleted", data});
-                });
-            }
+            res.status(403).json({succes: false, message: "You Are Not Authorized to Delete This Post."});
+        }else {
+            //delete post's comments
+            Comment.remove({post: req.params.postid}, (err)=>{
+                res.json({success: true, message: "Post Deleted", data});
+            });
+        }
+    });
+});
+
+router.post("/:postid/like", authMiddleware, (req, res)=>{
+    Post.findById(req.params.postid, (err, post)=>{
+        if(err){
+            res.status(404).json({success: false, message: "Post Not Found."});
+        }else{
+            User.update({_id: req.user.id}, {$addToSet: {'likes.posts': req.params.postid}})
+            .exec((err, data)=>{
+                if(data.nModified < 1){
+                    res.json({success: false, message: "Post Already Liked."});
+                }else {
+                    post.likes += 1;
+                    post.save((err)=>{
+                        if(err){
+                            res.status(500).json({success: false, message: "Error Liking Post.", err});
+                        }else{
+                            res.json({success: true, message: "Post Liked."});
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+
+router.delete("/:postid/like", authMiddleware, (req, res)=>{
+    Post.findById(req.params.postid, (err, post)=>{
+        if(err){
+            res.status(404).json({success: false, message: "Post Not Found."});
+        }else{
+            User.update({_id: req.user.id}, {$pull: {'likes.posts': req.params.postid}})
+            .exec((err, data)=>{
+                if(data.nModified < 1){
+                    res.json({success: false, message: "You Have Not Liked This Post."});
+                }else {
+                    post.likes -= 1;
+                    post.save((err)=>{
+                        if(err){
+                            res.status(500).json({success: false, message: "Error Un-Liking Post.", err});
+                        }else{
+                            res.json({success: true, message: "Post Un-Liked."});
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+
+router.post("/:postid/dislike", authMiddleware, (req, res)=>{
+    Post.findById(req.params.postid, (err, post)=>{
+        if(err){
+            res.status(404).json({success: false, message: "Post Not Found."});
+        }else{
+            User.update({_id: req.user.id}, {$addToSet: {'dislikes.posts': req.params.postid}})
+            .exec((err, data)=>{
+                if(data.nModified < 1){
+                    res.json({success: false, message: "Post Already Disliked."});
+                }else{
+                    post.dislikes += 1;
+                    post.save((err)=>{
+                        if(err){
+                            res.status(500).json({success: false, message: "Error Disliking Post.", err});
+                        }else{
+                            res.json({success: true, message: "Post Disliked."});
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+
+router.delete("/:postid/dislike", authMiddleware, (req, res)=>{
+    Post.findById(req.params.postid, (err, post)=>{
+        if(err){
+            res.status(404).json({success: false, message: "Post Not Found."});
+        }else{
+            User.update({_id: req.user.id}, {$pull: {'dislikes.posts': req.params.postid}})
+            .exec((err, data)=>{
+                if(data.nModified < 1){
+                    res.json({success: false, message: "You Have Not Disliked This Post."});
+                }else{
+                    post.dislikes -= 1;
+                    post.save((err)=>{
+                        if(err){
+                            res.status(500).json({success: false, message: "Error Un-Disliking Post.", err});
+                        }else{
+                            res.json({success: true, message: "Post Un-Disliked."});
+                        }
+                    });
+                }
+            });
         }
     });
 });
 
 router.post("/:postid/favorite", authMiddleware, (req, res)=>{
-    User.findOneAndUpdate(
+    User.update(
     {_id: req.user.id}, 
     {$addToSet: {'favorites': req.params.postid}}, 
-    {new: true}).populate('favorites').exec((err, user)=>{
+    {new: true}).exec((err, data)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Favoriting Article", err});
         }else {
@@ -125,5 +219,22 @@ router.post("/:postid/favorite", authMiddleware, (req, res)=>{
         }
     });
 });
+
+router.delete("/:postid/favorite", authMiddleware, (req, res)=>{
+    User.update(
+    {_id: req.user.id}, 
+    {$pull: {'favorites': req.params.postid}}, 
+    {new: true}).exec((err, data)=>{
+        if(err){
+            res.status(500).json({success: false, message: "Error Un-Favoriting Article", err});
+        }else {
+            Post.findById(req.params.postid, '-comments').populate('author', 'username, email, image').exec((err, post)=>{
+                res.json({success: true, message: "Removed From Favorites.", post});
+            });
+        }
+    });
+});
+
+
 
 module.exports = router;
