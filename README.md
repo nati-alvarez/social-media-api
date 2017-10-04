@@ -51,6 +51,13 @@ Likes, Dislikes, Favorites are set to 0.
 
 
 
+`/api/posts/feed`
+
+GET(requries auth):
+Return all posts from users that the current user is following
+
+
+
 `/api/posts/:postid`
 
 GET:
@@ -63,9 +70,56 @@ DELETE(requries auth):
 Deletes post and post's comments with specified id if authorized
 
 
-
 `/:postid/favorite`
 
-POST:
+POST(requires auth):
 Adds current article to favorites
 
+DELETE(requires auth):
+Removes current article from favorites
+
+
+`/:postid/like`
+
+POST(requries auth):
+Likes a post
+
+DELETE(requires auth):
+Removes like from post
+
+
+
+`/:postid/dislike`
+
+POST(requires auth):
+Dislikes a post
+
+DELETE(requires auth):
+Removes dislike from post
+
+
+
+`/comments/:commentid`
+
+DELETE(requires auth):
+Deletes a user's comment
+
+
+
+`/comments/:commentid/like`
+
+POST(requires auth):
+Likes a comment
+
+DELETE(requires auth):
+Removes like from commment
+
+
+
+`/comments/:commentid/dislike`
+
+POST(requires auth):
+Dislikes a comment
+
+DELETE(requires auth):
+Removes dislike from a comment
