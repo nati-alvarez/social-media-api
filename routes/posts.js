@@ -44,6 +44,22 @@ router.post('/', authMiddleware, (req, res)=>{
     });
 });
 
+//get users feed of followed users
+router.get('/feed', authMiddleware, (req, res)=>{
+    User.findById(req.user.id, (err, user)=>{
+        Post.find({author: {$in: user.following}})
+        .populate('author', 'email username image').exec((err, posts)=>{
+            if(err){
+                res.status(500).json({success: false, message: "Error Fetching Feed", err});
+            }else if(!posts[0]){
+                res.json({success: false, message: "No Posts In Feed."});
+            }else {
+                res.json({success: true, posts});
+            }
+        });
+    });
+});
+
 router.get('/:postid', (req,res)=>{
     Post.findById(req.params.postid)
     .populate('author', 'username image email')
@@ -69,21 +85,28 @@ router.get('/:postid', (req,res)=>{
 });
 
 router.post('/:postid', authMiddleware, (req, res)=>{
-    var newComment = new Comment();
-    newComment.body = req.body.commentBody;
-    newComment.author = req.user.id;
-    newComment.post = req.params.postid;
-
-    newComment.save((err, comment)=>{
+    Post.findById(req.params.postid, (err, post)=>{
         if(err){
-            res.status(500).json({success: false, message: "Error Creating Comment", err});
+            res.status(404).json({success: false, message: "Post Not Found"});
         }else{
-            //add post id to user model
-            Post.update({_id: req.params.postid}, {$push: {'comments': comment._id}}, (err)=>{
+            var newComment = new Comment();
+            newComment.body = req.body.commentBody;
+            newComment.author = req.user.id;
+            newComment.post = req.params.postid;
+        
+            newComment.save((err, comment)=>{
                 if(err){
                     res.status(500).json({success: false, message: "Error Creating Comment", err});
-                }else {
-                    res.json({success: true, message: "Comment Created", comment});
+                }else{
+                    //add post id to user model
+                    post.comments.push(comment._id);
+                    post.save((err)=>{
+                        if(err){
+                            res.status(500).json({success: false, message: "Error Creating Comment", err});
+                        }else {
+                            res.json({success: true, message: "Comment Created", comment});
+                        }
+                    });
                 }
             });
         }
