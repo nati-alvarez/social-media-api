@@ -24,6 +24,7 @@ router.post("/", (req, res)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Signing Up", err});
         }else {
+            res.cookie('api-token', newUser.toAuthJSON().token, {httpOnly: true });
             res.json({success: true, user: newUser.toAuthJSON()});
         }
     })
