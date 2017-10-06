@@ -42,7 +42,7 @@ router.post('/login', (req, res)=>{
             if(!validPassword){
                 res.json({success: false, message: "Incorrect Password"});
             }else {
-                res.cookie('api-token', user.toAuthJSON().token, { maxAge: 900000, httpOnly: true });
+                res.cookie('api-token', user.toAuthJSON().token, {httpOnly: true });
                 res.json({success: true, user: user.toAuthJSON()});
             }
         }
