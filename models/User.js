@@ -50,7 +50,11 @@ UserSchema.methods.toAuthJSON = function(){
       email: this.email,
       token: this.generateJWT(),
       bio: this.bio,
-      image: this.image
+      image: this.image,
+      following: this.following,
+      favorites: this.favorites,
+      likes: this.likes,
+      dislikes: this.dislikes
     };
 };
 

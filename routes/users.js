@@ -22,7 +22,13 @@ router.post("/", (req, res)=>{
 
     newUser.save((err)=>{
         if(err){
-            res.status(500).json({success: false, message: "Error Signing Up", err});
+            switch(err.code){
+                case 11000:
+                    res.status(500).json({success: false, message: "Username or Email Taken", err});
+                    break;
+                default:
+                    res.status(500).json({success: false, message: "Error Signing Up", err});
+            }
         }else {
             res.cookie('api-token', newUser.toAuthJSON().token, {httpOnly: true });
             res.json({success: true, user: newUser.toAuthJSON()});
