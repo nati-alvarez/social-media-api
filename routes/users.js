@@ -68,7 +68,7 @@ router.post('/login', (req, res)=>{
             res.json({success: false, message: "User Not Found."});
             return;
         }
-        
+
         var validPassword = user.checkPassword(req.body.password);
         if(!validPassword){
             res.json({success: false, message: "Incorrect Password"});
@@ -88,6 +88,14 @@ router.get("/:username", authMiddleware, (req, res)=>{
     var username = req.params.username;
     User.findOne({username}, {salt: 0, hash: 0})
     .populate('posts')
+    .populate({
+        path: 'posts',
+        populate: {
+            path: 'author',
+            model: 'User',
+            select: 'email username image'
+        }
+    })
     .populate('following', 'email username image')
     .populate('favorites')
     .populate({
@@ -108,7 +116,7 @@ router.get("/:username", authMiddleware, (req, res)=>{
         }
 
         res.json({success: true, user});
-            
+
     });
 });
 
@@ -133,9 +141,9 @@ router.post("/:username", authMiddleware, (req, res)=>{
                 res.json({success: false, message: `You Are Already Following ${user.username}`});
                 return;
             }
-                
+
             res.json({success: true, message: `Now Following ${user.username}`, user});
-                
+
         });
     });
 });
@@ -154,7 +162,7 @@ router.put("/:username", authMiddleware, (req, res)=>{
             res.json({success: false, message: "User Not Found"});
             return;
         }
-            
+
         user.bio = req.body.bio || user.bio;
         user.image = req.body.image || user.image;
         user.email = req.body.email || user.email;
@@ -164,7 +172,17 @@ router.put("/:username", authMiddleware, (req, res)=>{
                 res.status(500).json({success: false, message: "Error Updating Profile", err});
                 return;
             }
-            res.json({success: true, message: "Profile Updated.", updatedUser});
+            updatedUser.populate({
+              path: "following",
+              model: "User",
+              select: "email username image"
+            }, function(err){
+              if(err){
+                res.status(500).json({success: false, message: "Error Updating Profile", err});
+                return;
+              }
+              res.json({success: true, message: "Profile Updated.", updatedUser});
+            });
         });
     });
 });
@@ -174,14 +192,14 @@ router.delete("/:username", authMiddleware, (req, res)=>{
         res.status(403).json({success: false, message: "You Are Not Authorized To Delete This Account"});
         return;
     }
-    
+
     User.remove({username: req.params.username }, (err)=> {
         if (err){
             res.status(500).json({success: false, message: "Error Deleting Account.", err});
             return;
         }
         res.json({success: true, message: "Account Deleted."});
-        
+
     });
 });
 

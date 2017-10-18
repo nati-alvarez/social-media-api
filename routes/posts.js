@@ -24,7 +24,7 @@ router.get('/', (req, res)=>{
 });
 
 router.post('/', authMiddleware, (req, res)=>{
-    var postBody = req.body.postBody;
+    var postBody = req.body.postbody;
     var newPost = new Post();
     newPost.body = postBody;
     newPost.author = req.user.id;
@@ -67,13 +67,13 @@ router.get('/feed', authMiddleware, (req, res)=>{
 router.get('/:postid', (req,res)=>{
     Post.findById(req.params.postid)
     .populate('author', 'username image email')
-    .populate({ 
+    .populate({
         path: 'comments',
         populate: {
           path: 'author',
           model: 'User',
           select: 'username email image'
-        } 
+        }
      })
     .exec((err, post)=>{
         if(err){
@@ -83,7 +83,7 @@ router.get('/:postid', (req,res)=>{
             res.json({success: false, message: "Post Not Found"});
             return
         }
-        
+
         res.json({success: true, post});
     });
 });
@@ -94,18 +94,18 @@ router.post('/:postid', authMiddleware, (req, res)=>{
             res.status(404).json({success: false, message: "Post Not Found"});
             return;
         }
-        
+
         var newComment = new Comment();
-        newComment.body = req.body.commentBody;
+        newComment.body = req.body.commentbody;
         newComment.author = req.user.id;
         newComment.post = req.params.postid;
-        
+
         newComment.save((err, comment)=>{
             if(err){
                 res.status(500).json({success: false, message: "Error Creating Comment", err});
                 return;
             }
-            
+
             //add post id to user model
             post.comments.push(comment._id);
             post.save((err)=>{
@@ -113,8 +113,18 @@ router.post('/:postid', authMiddleware, (req, res)=>{
                     res.status(500).json({success: false, message: "Error Creating Comment", err});
                     return;
                 }
-                        
-                res.json({success: true, message: "Comment Created", comment});
+
+                comment.populate({
+                  path: 'author',
+                  model: 'User',
+                  select: 'username email image'
+                }, function(err){
+                    if(err){
+                      res.status(500).json({success: false, message: "Error Creating Comment", err});
+                      return
+                    }
+                      res.json({success: true, message: "Comment Created", comment});
+                })
             });
         });
     });
@@ -133,7 +143,7 @@ router.delete('/:postid', authMiddleware, (req, res)=>{
             res.status(403).json({succes: false, message: "You Are Not Authorized to Delete This Post."});
             return;
         }
-        
+
         //delete post's comments
         Comment.remove({post: req.params.postid}, (err)=>{
             res.json({success: true, message: "Post Deleted", data});
@@ -162,7 +172,7 @@ router.post("/:postid/like", authMiddleware, (req, res)=>{
 
                 res.json({success: true, message: "Post Liked."});
             });
-            
+
         });
     });
 });
@@ -184,7 +194,7 @@ router.delete("/:postid/like", authMiddleware, (req, res)=>{
                     res.status(500).json({success: false, message: "Error Un-Liking Post.", err});
                     return;
                 }
-                
+
                 res.json({success: true, message: "Post Un-Liked."});
             });
         });
@@ -203,7 +213,7 @@ router.post("/:postid/dislike", authMiddleware, (req, res)=>{
                 res.json({success: false, message: "Post Already Disliked."});
                 return;
             }
-            
+
             post.dislikes += 1;
             post.save((err)=>{
                 if(err){
@@ -229,14 +239,14 @@ router.delete("/:postid/dislike", authMiddleware, (req, res)=>{
                 res.json({success: false, message: "You Have Not Disliked This Post."});
                 return;
             }
-            
+
             post.dislikes -= 1;
             post.save((err)=>{
                 if(err){
                     res.status(500).json({success: false, message: "Error Un-Disliking Post.", err});
                     return;
                 }
-                        
+
                 res.json({success: true, message: "Post Un-Disliked."});
             });
         });
@@ -245,14 +255,17 @@ router.delete("/:postid/dislike", authMiddleware, (req, res)=>{
 
 router.post("/:postid/favorite", authMiddleware, (req, res)=>{
     User.update(
-    {_id: req.user.id}, 
-    {$addToSet: {'favorites': req.params.postid}}, 
+    {_id: req.user.id},
+    {$addToSet: {'favorites': req.params.postid}},
     {new: true}).exec((err, data)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Favoriting Article", err});
             return;
         }
-        
+        if(data.nModified < 1){
+            res.json({sucess: false, message: "Already In Favorites"});
+            return;
+        }
         Post.findById(req.params.postid, '-comments').populate('author', 'username, email, image').exec((err, post)=>{
             post.favorites += 1;
             post.save((err)=>{
@@ -260,7 +273,7 @@ router.post("/:postid/favorite", authMiddleware, (req, res)=>{
                     res.json({success: false, message: "Error Adding To Favorites", err});
                     return;
                 }
-                    
+
                 res.json({success: true, message: "Added To Favorites.", post});
             })
         });
@@ -269,14 +282,14 @@ router.post("/:postid/favorite", authMiddleware, (req, res)=>{
 
 router.delete("/:postid/favorite", authMiddleware, (req, res)=>{
     User.update(
-    {_id: req.user.id}, 
-    {$pull: {'favorites': req.params.postid}}, 
+    {_id: req.user.id},
+    {$pull: {'favorites': req.params.postid}},
     {new: true}).exec((err, data)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Un-Favoriting Article", err});
             return;
         }
-        
+
         Post.findById(req.params.postid, '-comments').populate('author', 'username, email, image').exec((err, post)=>{
             post.favorites -=1;
             post.save(err=>{
@@ -284,7 +297,7 @@ router.delete("/:postid/favorite", authMiddleware, (req, res)=>{
                     res.json({success: false, message: "Error Removing From Favorites.", err});
                     return;
                 }
-                
+
                 res.json({success: true, message: "Removed From Favorites.", post});
             })
         });
