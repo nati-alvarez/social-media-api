@@ -10,7 +10,9 @@ const Comment = require('../models/Comment')
 const authMiddleware = require("../userAuth");
 
 router.get('/', (req, res)=>{
-    Post.find({}).populate('author', 'username email image').exec((err, posts)=>{
+    Post.find({})
+    .sort({createdAt: -1})
+    .populate('author', 'username email image').exec((err, posts)=>{
         if(err){
             res.status(500).json({success: false, message: "Error Fetching Posts", err});
             return;
@@ -50,6 +52,7 @@ router.post('/', authMiddleware, (req, res)=>{
 router.get('/feed', authMiddleware, (req, res)=>{
     User.findById(req.user.id, (err, user)=>{
         Post.find({author: {$in: user.following}})
+        .sort({createdAt: -1})
         .populate('author', 'email username image').exec((err, posts)=>{
             if(err){
                 res.status(500).json({success: false, message: "Error Fetching Feed", err});
